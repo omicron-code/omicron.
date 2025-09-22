@@ -1,0 +1,64 @@
+--> Dummy Feature Modules (src/features)
+
+fake_cctv_honeypot.omc
+
+[omicron:use ~*sentinel.lab*~]
+[omicron:use ~*echo.hone*~]
+[omicron:use ~*oblivion.audit*~]
+
+[omicron:let cam = lab.spawn_device(~*camera:v1*~)]
+[omicron:lab.traffic.play(~*baseline*~)]
+[omicron:let h = hone.spawn(~*fake-cam*~)]
+[omicron:hone.collect h]
+[omicron:audit.log(~*honeypot-cam*~, attacker:h)]
+[omicron:output value ~*Fake CCTV Honeypot Running*~]
+
+
+passive_network_scan.omc
+
+[omicron:use ~*void.net*~]
+[omicron:let devices = net.discover("10.10.0.0/16")]
+[omicron:report.json("devices", devices)]
+[omicron:output value ~*Passive Network Scan Complete*~]
+
+
+hybrid_encryption_demo.omc
+
+[omicron:use ~*abyss.crypto*~]
+[omicron:let env = crypto.seal("secret", recipient:"SOC-HSM")]
+[omicron:audit.log("sealed")]
+[omicron:output value ~*Hybrid Encryption Demo Complete*~]
+
+5️--> Example Lab Run (examples/demo_lab_run.omc)
+# Spawn multiple devices and honeypots
+[omicron:let cam = lab.spawn_device(~*camera:v1*~)]
+[omicron:let r = lab.spawn_device(~*router:v2*~)]
+[omicron:let bulb = lab.spawn_device(~*iot-bulb:v1*~)]
+
+[omicron:lab.traffic.play(~*baseline*~)]
+
+[omicron:let hc = hone.spawn(~*fake-cam*~)]
+[omicron:let hr = hone.spawn(~*fake-router*~)]
+[omicron:let hb = hone.spawn(~*fake-bulb*~)]
+
+[omicron:hone.collect hc]
+[omicron:hone.collect hr]
+[omicron:hone.collect hb]
+
+[omicron:mirror.attach(iface:~*eth0*~)]
+[omicron:mirror.playback(window:30m)]
+
+[omicron:audit.log(~*honeypot-lab*~, attackers:[hc,hr,hb])]
+[omicron:output value ~*Full Honeypot Lab Running*~]
+
+6️--> Sample Test Script (tests/test_fake_cctv.py)
+import unittest
+from omicron_runtime import run_module
+
+class TestFakeCCTV(unittest.TestCase):
+    def test_cctv_module(self):
+        result = run_module("src/features/fake_cctv_honeypot.omc")
+        self.assertIn("Fake CCTV Honeypot Running", result)
+
+if __name__ == "__main__":
+    unittest.main()
